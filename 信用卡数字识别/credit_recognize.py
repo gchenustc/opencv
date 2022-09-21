@@ -52,7 +52,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-i","--image",required=True,help="path for input image")
 ap.add_argument("-t","--template",required=True,help="path for template image")
 args = vars(ap.parse_args("-i images/credit_card_03.png\
-                          -t images/ocr_a_reference.png".split()))
+                          -t images/ocr_a_reference.png".split())) # 改成字典的形式 {"images": path, "template": path}
 # 模板图像
 img_tem = cv2.imread(args["template"])
 # cv_show(img_tem)
@@ -61,7 +61,7 @@ img_tem_gray = cv2.cvtColor(img_tem, cv2.COLOR_BGR2GRAY)
 # 模板二值图像
 img_tem_thresh = cv2.threshold(img_tem_gray, 20, 255, cv2.THRESH_BINARY_INV)[1]
 # cv_show(img_tem_thresh)
-# 寻找和绘制轮廓
+# 寻找和绘制轮廓 - mode=cv2.RETR_EXTERNAL 只取外部轮廓
 ref_contours = cv2.findContours(img_tem_thresh, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[1]
 cv2.drawContours(img_tem, ref_contours, -1, (0,0,255), 3)
 # print(np.array(ref_contours).shape) # (10,)
@@ -79,6 +79,7 @@ for index, (x,y,w,h) in enumerate(ref_rect):
 # 卷积核
 kernel1 = cv2.getStructuringElement(cv2.MORPH_RECT, (9,3))
 kernel2 = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
+# print(kernel1, kernel1.dtype, type(kernel1)) # np.ones((9,3)), np.unit8, <class 'numpy.ndarray'>
 
 # 读取输入图像，预处理
 img = cv2.imread(args["image"])
@@ -131,7 +132,7 @@ for index, cnt in enumerate(contours):
     ar = w / float(h)
     if ar > 2.5 and ar < 4:
         if (w>30 and w<55) and (h>10 and h<20):
-            locs_lst.append(cnt)
+            locs_lst.append((x,y,w,h))
 
 # 对轮廓排序 - 按照x轴排序
 locs = sorted(locs_lst, key=lambda x:x[0])
