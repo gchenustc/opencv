@@ -185,6 +185,3 @@ print("Credit Card Type: {}".format(FIRST_NUMBER[digit_out[0]]))
 print("Credit Card #: {}".format(" ".join(digit_out)))        
 
 cv_show(img)
-        
-        
-    
