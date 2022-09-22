@@ -51,7 +51,7 @@ def cv_show(img):
 ap = argparse.ArgumentParser()
 ap.add_argument("-i","--image",required=True,help="path for input image")
 ap.add_argument("-t","--template",required=True,help="path for template image")
-args = vars(ap.parse_args("-i images/credit_card_03.png\
+args = vars(ap.parse_args("-i images/credit_card_04.png\
                           -t images/ocr_a_reference.png".split())) # 改成字典的形式 {"images": path, "template": path}
 # 模板图像
 img_tem = cv2.imread(args["template"])
@@ -69,7 +69,7 @@ cv2.drawContours(img_tem, ref_contours, -1, (0,0,255), 3)
 
 ref_contours, ref_rect = sort_contours(ref_contours)
 
-digits = {}
+digits = {} # digits 的key为数字，value为数字对应的图片
 for index, (x,y,w,h) in enumerate(ref_rect):
     roi = img_tem_thresh[y:y+h, x:x+w]
     roi = cv2.resize(roi, (57,88))
@@ -136,3 +136,55 @@ for index, cnt in enumerate(contours):
 
 # 对轮廓排序 - 按照x轴排序
 locs = sorted(locs_lst, key=lambda x:x[0])
+digit_out = [] # 银行卡号对应的所有数字
+for i,(x,y,w,h) in enumerate(locs):
+    real_digits = [] # 第一组数字的匹配值
+    group = img_gray[y-5:y+h+5, x-5:x+w+5]
+    # cv_show(group)
+    # 二值处理
+    group = cv2.threshold(group, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+    # cv_show(group)
+    # find contours
+    digit_contours = cv2.findContours(group, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)[1]
+    # draw_contour = cv2.drawContours(group.copy(), digit_contours, -1, (0,255,255),0)
+    # cv_show(draw_contour)
+    digit_contours, digit_contours_rects = sort_contours(digit_contours)
+    
+    # ! 不要和上一级循环的变量名相同，所以这里为x1, y1, w1, h1
+    for x1,y1,w1,h1 in digit_contours_rects:
+        roi = group[y1:y1+h1, x1:x1+w1]
+        roi = cv2.resize(roi, (57,88))
+        # cv_show(roi)
+
+        # 计算匹配得分
+        scores = [] # 索引对应匹配的数字，一共10个值，对应0-9的得分
+        
+        for digit,digit_roi in digits.items():
+            result = cv2.matchTemplate(roi, digit_roi, method=cv2.TM_CCOEFF_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+            
+            scores.append(max_val)
+        
+        # 取最高的得分
+        real_digits.append(str(np.argmax(scores)))
+
+    digit_out.extend(real_digits)
+    
+    # 展示
+    cv2.rectangle(img, (x-5,y-5), (x+w+5, y+h+5), (0,0,255), 1)
+    cv2.putText(img, "".join(real_digits), (x, y-15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
+
+# 打印结果
+FIRST_NUMBER = {
+	"3": "American Express",
+	"4": "Visa",
+	"5": "MasterCard",
+	"6": "Discover Card"
+}
+print("Credit Card Type: {}".format(FIRST_NUMBER[digit_out[0]]))
+print("Credit Card #: {}".format(" ".join(digit_out)))        
+
+cv_show(img)
+        
+        
+    
