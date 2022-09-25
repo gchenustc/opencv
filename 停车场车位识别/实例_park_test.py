@@ -7,7 +7,7 @@ from PIL import Image
 from keras.applications.imagenet_utils import preprocess_input
 from keras.models import load_model
 from keras.preprocessing import image
-from Parking import Parking
+from 实例_Parking import Parking
 import pickle
 cwd = os.getcwd()
 
